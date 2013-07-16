@@ -48,69 +48,56 @@ namespace erizo {
     cryptoVector_.push_back(info);
   }
 
+  std::string SdpInfo::getWithPayload(const std::string& desc, int type) {
+      std::string ret = desc; 
+      std::ostringstream tmp;
+      enum MediaType  mediaType = type < 0 ? VIDEO_TYPE : AUDIO_TYPE;
+      tmp << "RTP/" << (profile==SAVPF?"SAVPF ":"AVPF ");// << "103 104 0 8 106 105 13 126\n"
+      for (unsigned int it =0; it < payloadVector_.size(); it++){
+          const RtpMap& payload_info = payloadVector_[it];
+          if (payload_info.mediaType == mediaType)
+              tmp << payload_info.payloadType <<" ";
+      }
+      int pos = ret.find("ICE/SDP");
+      ret.replace(pos, 7, tmp.str());
+      return ret;
+  }
+
+  void SdpInfo::addDesc(std::string desc, int type ) {
+      int p = -1;
+      switch(type) {
+        case -1 :
+              videoDesc_.assign(getWithPayload(desc, type));
+              break;
+        case  0 :
+            videoDesc_.assign(getWithPayload(desc, -1));
+            p = desc.find("video");
+            desc.replace(p, 5, "audio");
+            audioDesc_.assign(getWithPayload(desc, 1));
+            break;
+        case  1 :
+            audioDesc_.assign(getWithPayload(desc, 1));
+            break;
+    }
+  }
+
   std::string SdpInfo::getSdp() {
+    char* msidtemp = static_cast<char*>(malloc(10));
+    gen_random(msidtemp,10);
 
     std::ostringstream sdp;
-    sdp << "v=0\n" << "o=- 0 0 IN IP4 127.0.0.1\n" << "s=\n" << "t=0 0\n";
+    sdp << "v=0\n" << "o=- 0 2 IN IP4 127.0.0.1\n" << "s=-\n" << "t=0 0\n";
 
     if (isBundle) {
       sdp << "a=group:BUNDLE audio video\n";
-    }
+      sdp << "a=msid-semantic: WMS "<< msidtemp << endl;
+     }
     //candidates audio
-    bool printedAudio = false, printedVideo = false;
-    for (unsigned int it = 0; it < candidateVector_.size(); it++) {
-      const CandidateInfo& cand = candidateVector_[it];
-      std::string hostType_str;
-      switch (cand.hostType) {
-        case HOST:
-          hostType_str = "host";
-          break;
-        case SRLFX:
-          hostType_str = "srflx";
-          break;
-        case PRFLX:
-          hostType_str = "prflx";
-          break;
-        case RELAY:
-          hostType_str = "relay";
-          break;
-        default:
-          hostType_str = "host";
-          break;
-      }
-      if (cand.mediaType == AUDIO_TYPE) {
-        if (!printedAudio) {
-          sdp << "m=audio " << cand.hostPort
-            << " RTP/" << (profile==SAVPF?"SAVPF ":"AVPF ");// << "103 104 0 8 106 105 13 126\n"
-          for (unsigned int it =0; it<payloadVector_.size(); it++){
-            const RtpMap& payload_info = payloadVector_[it];
-            if (payload_info.mediaType == AUDIO_TYPE)
-              sdp << payload_info.payloadType <<" ";
-
-          }
-          sdp << "\n"
-            << "c=IN IP4 " << cand.hostAddress
-            << endl << "a=rtcp:" << candidateVector_[0].hostPort
-            << " IN IP4 " << cand.hostAddress
-            << endl;
-          printedAudio = true;
-        }
-
-        sdp << "a=candidate:" << cand.foundation << " " << cand.componentId
-          << " " << cand.netProtocol << " " << cand.priority << " "
-          << cand.hostAddress << " " << cand.hostPort << " typ "
-          << hostType_str << " generation 0" << endl;
-
-        iceUsername_ = cand.username;
-        icePassword_ = cand.password;
-      }
-    }
     //crypto audio
-    if (printedAudio) {
-      sdp << "a=ice-ufrag:" << iceUsername_ << endl;
-      sdp << "a=ice-pwd:" << icePassword_ << endl;
+    if (!audioDesc_.empty()) {
+      sdp << audioDesc_ ;
       sdp << "a=sendrecv" << endl;
-      sdp << "a=mid:audio\n";
+      sdp << "a=mid:audio" << endl;
       if (isRtcpMux)
         sdp << "a=rtcp-mux\n";
       for (unsigned int it = 0; it < cryptoVector_.size(); it++) {
@@ -128,66 +115,22 @@ namespace erizo {
           sdp << "a=rtpmap:"<<rtp.payloadType << " " << rtp.encodingName << "/"
             << rtp.clockRate <<"\n";
       }
-      sdp << "a=ssrc:" << audioSsrc << " cname:o/i14u9pJrxRKAsu\na=ssrc:"
-        << audioSsrc
-        << " mslabel:048f838f-2dd1-4a98-ab9e-8eb5f00abab8\na=ssrc:"
-        << audioSsrc << " label:iSight integrada\n";
+      sdp << "a=ssrc:" << audioSsrc << " cname:o/i14u9pJrxRKAsu" << endl<<
+        "a=ssrc:"<< audioSsrc << " msid:"<< msidtemp << " a0"<< endl<<
+        "a=ssrc:"<< audioSsrc << " mslabel:"<< msidtemp << endl<<
+        "a=ssrc:"<< audioSsrc << " label:" << msidtemp <<"a0"<<endl;
 
     }
 
-    for (unsigned int it = 0; it < candidateVector_.size(); it++) {
-      const CandidateInfo& cand = candidateVector_[it];
-      std::string hostType_str;
-      switch (cand.hostType) {
-        case HOST:
-          hostType_str = "host";
-          break;
-        case SRLFX:
-          hostType_str = "srflx";
-          break;
-        case PRFLX:
-          hostType_str = "prflx";
-          break;
-        case RELAY:
-          hostType_str = "relay";
-          break;
-        default:
-          hostType_str = "host";
-          break;
-      }
-      if (cand.mediaType == VIDEO_TYPE) {
-        if (!printedVideo) {
-          sdp << "m=video " << cand.hostPort << " RTP/" << (profile==SAVPF?"SAVPF ":"AVPF "); //<<  "100 101 102 103\n"
-          for (unsigned int it =0; it<payloadVector_.size(); it++){
-            const RtpMap& payload_info = payloadVector_[it];
-            if (payload_info.mediaType == VIDEO_TYPE)
-              sdp << payload_info.payloadType <<" ";
-          }
-
-          sdp << "\n" << "c=IN IP4 " << cand.hostAddress
-            << endl << "a=rtcp:" << candidateVector_[0].hostPort
-            << " IN IP4 " << cand.hostAddress
-            << endl;
-          printedVideo = true;
-        }
-
-        sdp << "a=candidate:" << cand.foundation << " " << cand.componentId
-          << " " << cand.netProtocol << " " << cand.priority << " "
-          << cand.hostAddress << " " << cand.hostPort << " typ "
-          << hostType_str << " generation 0" << endl;
-
-        iceUsername_ = cand.username;
-        icePassword_ = cand.password;
-      }
-    }
     //crypto audio
-    if (printedVideo) {
-      sdp << "a=ice-ufrag:" << iceUsername_ << endl;
-      sdp << "a=ice-pwd:" << icePassword_ << endl;
+    if ( !videoDesc_.empty() ) {
+      sdp << videoDesc_ ;
       sdp << "a=sendrecv" << endl;
       sdp << "a=mid:video\n";
       if (isRtcpMux) 
         sdp << "a=rtcp-mux\n";
+      sdp << "a=rtcp-fb:100 ccm fir" << endl;
+      sdp << "a=rtcp-fb:100 nack" << endl;
       for (unsigned int it = 0; it < cryptoVector_.size(); it++) {
         const CryptoInfo& cryp_info = cryptoVector_[it];
         if (cryp_info.mediaType == VIDEO_TYPE) {
@@ -204,12 +147,13 @@ namespace erizo {
             << rtp.clockRate <<"\n";
       }
 
-      sdp << "a=ssrc:" << videoSsrc << " cname:o/i14u9pJrxRKAsu\na=ssrc:"
-        << videoSsrc
-        << " mslabel:048f838f-2dd1-4a98-ab9e-8eb5f00abab8\na=ssrc:"
-        << videoSsrc << " label:iSight integrada\n";
+      sdp << "a=ssrc:" << videoSsrc << " cname:o/i14u9pJrxRKAsu" << endl<<
+        "a=ssrc:"<< videoSsrc << " msid:"<< msidtemp << " v0"<< endl<<
+        "a=ssrc:"<< videoSsrc << " mslabel:"<< msidtemp << endl<<
+        "a=ssrc:"<< videoSsrc << " label:" << msidtemp <<"v0"<<endl;
     }
-    printf("sdp local \n %s\n",sdp.str().c_str());
+    free (msidtemp);
+ //   printf("sdp local \n %s\n",sdp.str().c_str());
     return sdp.str();
   }
 
@@ -224,6 +168,10 @@ namespace erizo {
     MediaType mtype = OTHER;
 
     while (std::getline(iss, strLine)) {
+      int pos = strLine.find_last_of('\r');
+      if( pos == strLine.length() - 1) {
+          strLine.erase(pos);
+      }
       const char* theline = strLine.c_str();
       sprintf(line, "%s\n", theline);
       char* isVideo = strstr(line, video);
@@ -290,7 +238,6 @@ namespace erizo {
         pch = strtok(line, " : \n");
         pch = strtok(NULL, " : \n");
         iceUsername_ = std::string(pch);
-
       }
       if (isPass) {
         char* pch;
@@ -408,5 +355,17 @@ namespace erizo {
     return true;
   }
 
+  void SdpInfo::gen_random(char *s, const int len) {
+    static const char alphanum[] =
+        "0123456789"
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+        "abcdefghijklmnopqrstuvwxyz";
+
+    for (int i = 0; i < len; ++i) {
+        s[i] = alphanum[rand() % (sizeof(alphanum) - 1)];
+    }
+
+    s[len] = 0;
+  }
 }/* namespace erizo */
 

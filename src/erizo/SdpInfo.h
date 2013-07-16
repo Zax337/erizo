@@ -92,6 +92,8 @@ struct RtpMap {
  */
 class SdpInfo {
 public:
+	void addDesc(std::string desc, int type);
+    std::string getWithPayload(const std::string& desc, int type); 
 	/**
 	 * Constructor
 	 */
@@ -154,11 +156,14 @@ public:
 private:
 	bool processSdp(const std::string& sdp);
 	bool processCandidate(char** pieces, int size, MediaType mediaType);
+  void gen_random(char* s, int len);
 	std::vector<CandidateInfo> candidateVector_;
 	std::vector<CryptoInfo> cryptoVector_;
   std::vector<RtpMap> payloadVector_;
 	std::string iceUsername_;
 	std::string icePassword_;
+    std::string audioDesc_;
+    std::string videoDesc_;
 };
 }/* namespace erizo */
 #endif /* SDPPROCESSOR_H_ */
