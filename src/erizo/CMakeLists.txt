@@ -51,6 +51,21 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 find_library(GTHREAD gthread-2.0)
 test_lib(${GTHREAD})
 
+<<<<<<< HEAD
 # OPENSSL
 set(SSL -lssl ${SSL_DIR}/libcrypto.so)
 target_link_libraries(erizo ${SRTP} ${NICE} ${GTHREAD} ${SSL})
+=======
+find_library(AVCODEC NAMES avcodec
+PATHS
+/usr/lib
+/usr/local/lib
+)
+
+find_library(AVFORMAT NAMES avformat
+PATHS
+/usr/lib
+/usr/local/lib
+)
+target_link_libraries(erizo ${SRTP} ${NICE} ${GTHREAD} ${AVCODEC} ${AVFORMAT})
+>>>>>>> Don't remember if up to date so now it is

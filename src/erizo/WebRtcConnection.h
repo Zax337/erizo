@@ -10,6 +10,12 @@
 #include "SdpInfo.h"
 #include "MediaDefinitions.h"
 #include "Transport.h"
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libavutil/opt.h>
+}
+
 
 namespace erizo {
 
@@ -116,6 +122,11 @@ namespace erizo {
 
             bool sending_;
             void sendLoop();
+    AVCodecContext * ecodec_ctx;
+    AVCodec * ecodec;
+    AVFormatContext * oc_;
+    void openFFMpegContext(std::string& ip, int port); 
+
 
     };
 

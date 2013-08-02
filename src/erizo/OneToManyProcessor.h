@@ -7,12 +7,55 @@
 
 #include <map>
 #include <string>
+#include <arpa/inet.h>
+
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+}
+
+
+#define VP8_PL 0x64 
+#define RED_PL 116
+#define MAX_RTP_LEN 1000
 
 #include "MediaDefinitions.h"
 
 namespace erizo{
 
 class WebRtcConnection;
+
+/*
+typedef struct {
+    uint8_t b:1;
+    uint8_t fi:2;
+    uint8_t n:1;
+    uint8_t i:1;
+    uint8_t RSV:3;
+//    uint32_t pID;
+} vp8desc;
+*/
+
+typedef struct {
+    uint8_t x:1;
+    uint8_t r:1;
+    uint8_t n:1;
+    uint8_t s:1;
+    uint8_t partID:4;
+} vp8desc;
+
+typedef struct {
+    uint8_t i:1;
+    uint8_t l:1;
+    uint8_t t:1;
+    uint8_t k:1;
+    uint8_t rsv:4;
+} vp8desc_x;
+
+typedef struct {
+    uint8_t pl:7;
+    uint8_t p:1;
+} redhdr;
 
 /**
  * Represents a One to Many connection.
@@ -54,12 +97,22 @@ public:
      */
     void closeAll();
 
+  void FillRTPHeader(uint8_t * buf, bool marker); 
+  void FillREDHeader(uint8_t * buf);
+  void FillVP8Header(uint8_t * buf, bool, bool);
+  void FillPayload(uint8_t * buf, uint8_t * data, int size);
+//  void SendVideoToSubscribers(uint8_t * data, int size);
+  void SendVideoToSubscribers(AVPacket * packet);
+
 private:
-    char* sendVideoBuffer_;
-    char* sendAudioBuffer_;
-    unsigned int sentPackets_;
+	char* sendVideoBuffer_;
+    int cursor_;
+	char* sendAudioBuffer_;
+	unsigned int sentPackets_;
     std::string rtcpReceiverPeerId_;
     FeedbackSink* feedbackSink_;
+    uint16_t seqnb_;
+    uint32_t timestamp_;
 };
 
 } /* namespace erizo */

@@ -44,6 +44,7 @@ bool SrtpChannel::setRtcpParams(char* sendingKey, char* receivingKey) {
     return 0;
 }
 
+<<<<<<< HEAD
 int SrtpChannel::protectRtp(char* buffer, int *len) {
 
     if (!active_)
