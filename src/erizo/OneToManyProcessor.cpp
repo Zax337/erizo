@@ -4,6 +4,13 @@
 
 #include "OneToManyProcessor.h"
 #include "WebRtcConnection.h"
+#define BISTRI_REC 0
+
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+}
+
 
 
 namespace erizo {
@@ -12,8 +19,10 @@ namespace erizo {
     AVFrame * frame;
     AVCodecContext * ecodec_ctx;
     AVCodec * ecodec;
-//    AVFormatContext * oc_;
-//    int stream_index;
+#if BISTRI_REC
+    AVFormatContext * oc_;
+    int stream_index;
+#endif
 
 
     OneToManyProcessor::OneToManyProcessor() {
@@ -43,16 +52,17 @@ namespace erizo {
       avcodec_open2(ecodec_ctx, ecodec, NULL);
       cursor_ = 0;
 
-/*
+#if BISTRI_REC
       srand(time(NULL));
       std::stringstream filename;
-      filename << "test" << rand() << ".avi"; */
-//      avformat_alloc_output_context2(&oc_, NULL, "rtp"/*"avi"*/, /*filename.str().c_str()*/"");
-/*      AVStream * vstream = avformat_new_stream(oc_, ecodec_ctx->codec);
+      filename << "test" << rand() << ".avi";
+      avformat_alloc_output_context2(&oc_, NULL, "avi", filename.str().c_str());
+      AVStream * vstream = avformat_new_stream(oc_, ecodec_ctx->codec);
       stream_index = vstream->index;
       vstream->codec = ecodec_ctx;
-//      avio_open(&oc_->pb, filename.str().c_str(), AVIO_FLAG_WRITE);
-//      avformat_write_header(oc_, NULL);*/
+      avio_open(&oc_->pb, filename.str().c_str(), AVIO_FLAG_WRITE);
+      avformat_write_header(oc_, NULL);
+#endif
     }
 
     OneToManyProcessor::~OneToManyProcessor() {
@@ -89,12 +99,12 @@ namespace erizo {
             return 0;
         }
     size_t header = sizeof(rtpheader);
-    size_t vp8hd  = 4;//sizeof(vp8desc); // dafuq ?
+    size_t vp8hd  = 4; //sizeof(vp8desc); // dafuq ?
     size_t red    = sizeof(redhdr);
     size_t offset = header;
 
     rtpheader* head2 = reinterpret_cast<rtpheader*>(buf);
-    if ((head2->payloadtype == RED_PL || head2->payloadtype == VP8_PL) && false) { // false -> disable mixing
+    if ((head2->payloadtype == RED_PL || head2->payloadtype == VP8_PL)) { // false -> disable mixing
         if( head2->payloadtype == RED_PL ) {
             bool pouet = false; 
             redhdr * headred = reinterpret_cast<redhdr*>(buf + offset);
@@ -163,11 +173,12 @@ namespace erizo {
                 }
                 if (got_output) {
                     printf("GOT OUTPUT %d\n", packet.size);
-                    /*
+#if BISTRI_REC
                     packet.stream_index = stream_index;
                     av_write_frame(oc_, &packet);
-                    */
-                    SendVideoToSubscribers( &packet );
+#endif
+                    //timestamp_ += packet.pts;
+                    SendVideoToSubscribers( packet.data, packet.size );
                 }
                 av_free_packet(&packet);
             }
@@ -259,61 +270,126 @@ namespace erizo {
       int payload_length = size / nb_packet; 
       assert(payload_length < MAX_RTP_LEN);
       int offset = 0;
+=======
+  void OneToManyProcessor::SendVideoToSubscribers(uint8_t * data, int size ) {
+>>>>>>> Shows only little parts of the real picture, but still shows something..
       uint8_t buf[MAX_RTP_LEN];
       memset(buf, 0, MAX_RTP_LEN);
-      bool marker = false;
-      int len = payload_length;
-      int header = 0;
-      while ( offset < size ) {
-          if ( offset + payload_length > size ) {
-              marker = true;
-              len = size - offset;
+      uint8_t header[HEADER_SIZE];
+      memset(header, 0, HEADER_SIZE);
+      int len = 0;
+      int max_payload_len = MAX_RTP_LEN - HEADER_SIZE;
+
+      header[0] = 0x80;
+      header[1] = (VP8_PL & 0x7f);// | ((marker & 0x01) << 7);
+
+      header[2] = (int) seqnb_ >> 8;
+      header[3] = (uint8_t) seqnb_++;
+
+      header[4] = timestamp_ >> 24;
+      header[5] = (uint8_t)(timestamp_ >> 16);
+      header[6] = (uint8_t)(timestamp_ >> 8 );
+      header[7] = (uint8_t) timestamp_;   
+
+      header[8] = publisher->localVideoSsrc_ >> 24;
+      header[9] = (uint8_t)(publisher->localVideoSsrc_ >> 16);
+      header[10] = (uint8_t)(publisher->localVideoSsrc_ >> 8 );
+      header[11] = (uint8_t) publisher->localVideoSsrc_; 
+
+      header[12] = 0x90;
+      header[13] = 0x80;
+      header[14] = frame_count_++ & 0x7f;
+      memcpy(buf, header, HEADER_SIZE);
+      while(size > 0) {
+          len = std::min(size, max_payload_len);
+          if( len == size ) {
+              buf[1] |= (0x01 << 7);
           }
-          assert(len + 13 < MAX_RTP_LEN);
-
-          FillRTPHeader(buf,  marker);
-          header += sizeof(rtpheader);
-          FillREDHeader(buf + header);
-          header += sizeof(redhdr);
-          FillVP8Header(buf + header, marker, offset == 0 );
-          header++;
-          FillPayload(buf + header, data + offset, len);
-
+          memcpy(buf + HEADER_SIZE,   data, len);
           std::map<std::string, WebRtcConnection*>::iterator it;
           for (it = subscribers.begin(); it != subscribers.end(); it++) {
-              memset(sendVideoBuffer_, 0, MAX_RTP_LEN);
-              memcpy(sendVideoBuffer_, buf, len + header);
-              (*it).second->receiveVideoData(sendVideoBuffer_, header + len);
+              memset(sendVideoBuffer_,   0, len + HEADER_SIZE);
+              memcpy(sendVideoBuffer_, buf, len + HEADER_SIZE);
+              (*it).second->receiveVideoData(sendVideoBuffer_, len + HEADER_SIZE);
           }
-
-          offset += payload_length;
-          header = 0;
-          memset(buf, 0, MAX_RTP_LEN);
+          data += len;
+          size -= len;
+          buf[0] &= ~0x10;
       }
-      */
   }
 
+  //TODO
+  //void OneToManyProcessor::SendVideoToSubscribers(uint8_t * data, int size ) {
+  //  void OneToManyProcessor::SendVideoToSubscribers(AVPacket * packet ) {
+  //        std::map<std::string, WebRtcConnection*>::iterator it;
+  //uint8_t * buf = (uint8_t *) malloc(sizeof(uint8_t) * size);
+  //        for (it = subscribers.begin(); it != subscribers.end(); it++) {
+  //            memset(buf, 0, size);
+  //            memcpy(buf, data, size);
+  //            (*it).second->receiveVideoData(buf, size, true);
+  //            (*it).second->receiveVideoData(packet);
+  //        }
+  //free(buf);
+  /*
+     int nb_packet = size / (MAX_RTP_LEN - (sizeof(rtpheader) + sizeof(redhdr) + sizeof(vp8desc))) + 1;
+     int payload_length = size / nb_packet; 
+     assert(payload_length < MAX_RTP_LEN);
+     int offset = 0;
+     uint8_t buf[MAX_RTP_LEN];
+     memset(buf, 0, MAX_RTP_LEN);
+     bool marker = false;
+     int len = payload_length;
+     int header = 0;
+     while ( offset < size ) {
+     if ( offset + payload_length > size ) {
+     marker = true;
+     len = size - offset;
+     }
+     assert(len + 13 < MAX_RTP_LEN);
+
+     FillRTPHeader(buf,  marker);
+     header += sizeof(rtpheader);
+     FillREDHeader(buf + header);
+     header += sizeof(redhdr);
+     FillVP8Header(buf + header, marker, offset == 0 );
+     header++;
+     FillPayload(buf + header, data + offset, len);
+
+     std::map<std::string, WebRtcConnection*>::iterator it;
+     for (it = subscribers.begin(); it != subscribers.end(); it++) {
+     memset(sendVideoBuffer_, 0, MAX_RTP_LEN);
+     memcpy(sendVideoBuffer_, buf, len + header);
+     (*it).second->receiveVideoData(sendVideoBuffer_, header + len);
+     }
+
+     offset += payload_length;
+     header = 0;
+     memset(buf, 0, MAX_RTP_LEN);
+     }
+   */
+  //  }
+
   void OneToManyProcessor::FillRTPHeader(uint8_t * buf, bool marker) {
-//      struct timeval ts;
-//      gettimeofday(&ts, NULL);
+      //      struct timeval ts;
+      //      gettimeofday(&ts, NULL);
       rtpheader rtp = {0, 0, 0, 2, VP8_PL, marker ? 1 : 0, htons(seqnb_++ % 65535), htonl(timestamp_), htonl(publisher->localVideoSsrc_)};
       memcpy(buf, &rtp, sizeof(rtpheader));
   }
 
   void OneToManyProcessor::FillREDHeader(uint8_t * buf) {
-  //    buf[sizeof(rtpheader)] = static_cast<uint8_t>(VP8_PL);
+      //    buf[sizeof(rtpheader)] = static_cast<uint8_t>(VP8_PL);
       redhdr red = {VP8_PL,0};
       memcpy(buf, &red, sizeof(redhdr));
   }
 
   void OneToManyProcessor::FillVP8Header(uint8_t * buf, bool last, bool first) {
       /*
-      vp8desc vp8_desc = {first, 0x3, 0, 0,0};
-      if(last) {
-          vp8_desc.fi = 0x2;
-      } else if (first) {
-          vp8_desc.fi = 0x1;
-      }*/
+         vp8desc vp8_desc = {first, 0x3, 0, 0,0};
+         if(last) {
+         vp8_desc.fi = 0x2;
+         } else if (first) {
+         vp8_desc.fi = 0x1;
+         }*/
       vp8desc vp8_desc = {0, 0, 0, first, 0};
       memcpy(buf, &vp8_desc, sizeof(vp8_desc));
   }

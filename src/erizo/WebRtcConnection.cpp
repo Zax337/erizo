@@ -154,6 +154,7 @@ namespace erizo {
   }
 
   void WebRtcConnection::openFFMpegContext(std::string& ip, int port) {
+      /*
       ecodec = avcodec_find_encoder(AV_CODEC_ID_VP8);
       ecodec_ctx = avcodec_alloc_context3(ecodec);
       ecodec_ctx->pix_fmt = PIX_FMT_YUV420P;
@@ -164,7 +165,7 @@ namespace erizo {
       avcodec_open2(ecodec_ctx, ecodec, NULL);
 
       srand(time(NULL));
-      avformat_alloc_output_context2(&oc_, NULL, "rtp"/*"avi"*/, /*filename.str().c_str()*/ NULL);
+      avformat_alloc_output_context2(&oc_, NULL, "rtp", NULL);
       av_opt_set_int(oc_->priv_data, "payload_type", 100, 0);
       printf("ssrc %d \n", localVideoSsrc_);
       av_opt_set_int(oc_->priv_data, "ssrc", localVideoSsrc_, 0);
@@ -175,7 +176,7 @@ namespace erizo {
       int ret = avio_open(&oc_->pb, url.str().c_str(), AVIO_FLAG_WRITE);
       printf("ret %d %s\n", ret, url.str().c_str());
       assert(ret== 0);
-      avformat_write_header(oc_, NULL);
+      avformat_write_header(oc_, NULL);*/
   }
 
 

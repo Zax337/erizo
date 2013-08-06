@@ -9,15 +9,11 @@
 #include <string>
 #include <arpa/inet.h>
 
-extern "C" {
-#include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-}
-
 
 #define VP8_PL 0x64 
 #define RED_PL 116
 #define MAX_RTP_LEN 1000
+#define HEADER_SIZE 15
 
 #include "MediaDefinitions.h"
 
@@ -101,8 +97,9 @@ public:
   void FillREDHeader(uint8_t * buf);
   void FillVP8Header(uint8_t * buf, bool, bool);
   void FillPayload(uint8_t * buf, uint8_t * data, int size);
-//  void SendVideoToSubscribers(uint8_t * data, int size);
-  void SendVideoToSubscribers(AVPacket * packet);
+  void SendVideoToSubscribers(uint8_t * data, int size);
+//  void SendVideoToSubscribers(AVPacket * packet);
+
 
 private:
 	char* sendVideoBuffer_;
@@ -113,6 +110,7 @@ private:
     FeedbackSink* feedbackSink_;
     uint16_t seqnb_;
     uint32_t timestamp_;
+    unsigned int frame_count_;
 };
 
 } /* namespace erizo */
