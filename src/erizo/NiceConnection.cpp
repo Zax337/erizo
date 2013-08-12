@@ -158,7 +158,6 @@ namespace erizo {
             printf("Ice Component failed\n");
             NiceConnection *conn = (NiceConnection*) user_data;
             conn->updateIceState(NICE_FAILED);
-            //conn->getWebRtcConnection()->close();
         }
 
     }
@@ -241,10 +240,8 @@ namespace erizo {
         printf("Creating Main Loop\n");
         loop_ =  g_main_loop_new(context_, FALSE);
         printf("Creating Agent\n");
-        //loop_ =  g_main_loop_new(NULL, FALSE);
         //	nice_debug_enable( TRUE );
         // Create a nice agent
-        //agent_ = nice_agent_new(g_main_loop_get_context(loop_), NICE_COMPATIBILITY_RFC5245);
         agent_ = nice_agent_new(context_, NICE_COMPATIBILITY_RFC5245);
         GValue controllingMode = { 0 };
         g_value_init(&controllingMode, G_TYPE_BOOLEAN);
@@ -277,7 +274,9 @@ namespace erizo {
         // Set Port Range ----> If this doesn't work when linking the file libnice.sym has to be modified to include this call
         //	nice_agent_set_port_range(agent_, (guint)1, (guint)1, (guint)51000, (guint)52000);
 
-        //      nice_agent_set_relay_info(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP, stunServer_.c_str(), stunPort_, "homeo", "homeo", NICE_RELAY_TYPE_TURN_UDP);
+        if ( ! stunServ_.empty() && stunPort_ != 0 ) {
+            nice_agent_set_relay_info(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP, stunServ_.c_str(), stunPort_, "homeo", "homeo", NICE_RELAY_TYPE_TURN_UDP);
+        }
 
         nice_agent_set_stream_name(agent_, stream_id_, mediaType == AUDIO_TYPE ? "audio" : "video");
         nice_agent_attach_recv(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP, context_, cb_nice_recv, this);

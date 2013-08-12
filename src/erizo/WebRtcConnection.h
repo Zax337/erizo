@@ -97,6 +97,7 @@ namespace erizo {
             void updateState(TransportState state, Transport * transport);
 
             void queueData(int comp, const char* data, int len, Transport *transport);
+            void updateSsrcs() {}
 
         private:
             SdpInfo remoteSdp_;

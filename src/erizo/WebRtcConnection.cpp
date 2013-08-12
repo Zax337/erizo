@@ -22,9 +22,9 @@ namespace erizo {
         bundle_ = false;
         srand(time(NULL));
         int r = rand();
-        this->setVideoSinkSSRC(/*55543*/ r);
+        this->setVideoSinkSSRC(r);
         srand(r);
-        this->setAudioSinkSSRC(/*44444*/ rand());
+        this->setAudioSinkSSRC(rand());
         videoSink_ = NULL;
         audioSink_ = NULL;
         fbSink_ = NULL;
