@@ -79,12 +79,6 @@ namespace erizo {
                     continue;
 
                 }
-                //			printf("foundation %s\n", cand->foundation);
-                //			printf("compid %u\n", cand->component_id);
-                //			printf("stream_id %u\n", cand->stream_id);
-                //			printf("priority %u\n", cand->priority);
-                //			printf("username %s\n", cand->username);
-                //			printf("password %s\n", cand->password);
                 CandidateInfo cand_info;
                 cand_info.componentId = cand->component_id;
                 cand_info.foundation = cand->foundation;
@@ -110,7 +104,6 @@ namespace erizo {
                         cand_info.hostType = PRFLX;
                         break;
                     case NICE_CANDIDATE_TYPE_RELAYED:
-                        printf("WARNING TURN NOT IMPLEMENTED YET\n");
                         cand_info.hostType = RELAY;
                         break;
                     default:
@@ -122,17 +115,6 @@ namespace erizo {
                 cand_info.username = std::string(ufrag);
 
                 cand_info.password = std::string(upass);
-                /*
-                   if (cand->username)
-                   cand_info.username = std::string(cand->username);
-                   else
-                   cand_info.username = std::string("(null)");
-
-                   if (cand->password)
-                   cand_info.password = std::string(cand->password);
-                   else
-                   cand_info.password = std::string("(null)");
-                 */
 
                 conn->localCandidates->push_back(cand_info);
             }
@@ -225,7 +207,7 @@ namespace erizo {
         }
         if (val != len) {
             printf("Data sent %d of %d\n", val, len);
-       	}
+        }
         return val;
     }
 
@@ -234,6 +216,11 @@ namespace erizo {
         turnCredPass_.assign(pass);
     }
 
+
+    /*
+     * Create Nice agent and begin gathering candidates.
+     *
+     */
     void NiceConnection::init() {
 
         streamsGathered = 0;

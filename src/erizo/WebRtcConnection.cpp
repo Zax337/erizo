@@ -152,26 +152,39 @@ namespace erizo {
         return localSdp_.getSdp();
   }
 
+    /*
+     * Send Audio.
+     *
+     */
     int WebRtcConnection::deliverAudioData(char* buf, int len) {
         boost::mutex::scoped_lock lock(receiveAudioMutex_);
         writeSsrc(buf, len, this->getAudioSinkSSRC());
         rtpheader *head = reinterpret_cast<rtpheader*> (buf);
+        // Sometimes payload type are not the same between two client.
+        // Translate into outer representation.
         if( remoteSdp_.inOutPTMap[head->payloadtype] != 0 ) {
             head->payloadtype = remoteSdp_.inOutPTMap[head->payloadtype];
         }
         if (bundle_){
             if (videoTransport_ != NULL) {
-//                videoTransport_->write(buf, len);
+                videoTransport_->write(buf, len);
             }
         } else if (audioTransport_ != NULL) {
-//            audioTransport_->write(buf, len);
+            audioTransport_->write(buf, len);
         }
         return len;
     }
 
+
+    /* 
+     * Send Video.
+     *
+     */
     int WebRtcConnection::deliverVideoData(char* buf, int len) {
         boost::mutex::scoped_lock lock(receiveAudioMutex_);
         rtpheader *head = (rtpheader*) buf;
+        // Sometimes payload type are not the same between two client.
+        // Translate into outer representation.
         if( remoteSdp_.inOutPTMap[head->payloadtype] != 0 ) {
             head->payloadtype = remoteSdp_.inOutPTMap[head->payloadtype];
         }
@@ -185,7 +198,6 @@ namespace erizo {
             int rtpHeaderLength = totalLength;
             redheader *redhead = (redheader*) (buf + totalLength);
 
-            //redhead->payloadtype = remoteSdp_.inOutPTMap[redhead->payloadtype];
             if (!remoteSdp_.supportPayloadType(head->payloadtype)) {
                 while (redhead->follow) {
                     totalLength += redhead->getLength() + 4; // RED header
@@ -204,7 +216,7 @@ namespace erizo {
             }
         }
         writeSsrc(buf, len, this->getVideoSinkSSRC());
-printf("Send Ssrc %u\n", ntohl(head->ssrc));
+        printf("Send Ssrc %u\n", ntohl(head->ssrc));
         if (videoTransport_ != NULL) {
             videoTransport_->write(buf, len);
         }
@@ -244,6 +256,11 @@ printf("Send Ssrc %u\n", ntohl(head->ssrc));
         }
     }
 
+
+    /*
+     * Receive Data and dispatch to the good media (audio / video).
+     *
+     */
     void WebRtcConnection::onTransportData(char* buf, int len, Transport *transport) {
         boost::mutex::scoped_lock lock(writeMutex_);
         if (audioSink_ == NULL && videoSink_ == NULL && fbSink_==NULL)
@@ -260,6 +277,8 @@ printf("Send Ssrc %u\n", ntohl(head->ssrc));
             // RTP or RTCP Sender Report
             rtpheader * head = reinterpret_cast<rtpheader*> (buf);
             rtcpheader * chead = reinterpret_cast<rtcpheader*> (buf);
+            // Sometimes payload type are not the same between two client.
+            // Translate into inner representation.
             if( remoteSdp_.outInPTMap[head->payloadtype] != 0 ) {
                 head->payloadtype = remoteSdp_.outInPTMap[head->payloadtype];
             }
