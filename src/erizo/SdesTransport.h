@@ -9,7 +9,7 @@ namespace erizo {
 	class SrtpChannel;
 	class SdesTransport : public Transport {
 		public:
-			SdesTransport(MediaType med, const std::string &transport_name, bool bundle, bool rtcp_mux, const std::string& stunServe, const int stunPort, CryptoInfo *remoteCrypto, TransportListener *transportListener);
+			SdesTransport(MediaType med, const std::string &transport_name, bool bundle, bool rtcp_mux, const std::string& stunServe, const int stunPort, const std::string& cred_id, const std::string& cred_pass, CryptoInfo *remoteCrypto, TransportListener *transportListener);
 			~SdesTransport();
 			void connectionStateChanged(IceState newState);
 			void onNiceData(unsigned int component_id, char* data, int len, NiceConnection* nice);

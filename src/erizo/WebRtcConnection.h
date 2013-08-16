@@ -64,7 +64,7 @@ namespace erizo {
              * @param sdp The SDP.
              * @return true if the SDP was received correctly.
              */
-            bool setRemoteSdp(const std::string &sdp, const std::string& stunServ = "", const int stunPort = 0);
+            bool setRemoteSdp(const std::string &sdp, const std::string& stunServ = "", const int stunPort = 0, const std::string& cred_id = "", const std::string& cred_pass = "");
             /**
              * Obtains the local SDP.
              * @return The SDP as a string.

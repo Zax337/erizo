@@ -16,7 +16,7 @@ using namespace erizo;
 using namespace std;
 using namespace dtls;
 
-DtlsTransport::DtlsTransport(MediaType med, const std::string &transport_name, bool bundle, bool rtcp_mux, const std::string& stunServ, const int stunPort, TransportListener *transportListener)
+DtlsTransport::DtlsTransport(MediaType med, const std::string &transport_name, bool bundle, bool rtcp_mux, const std::string& stunServ, const int stunPort, const std::string& cred_id, const std::string& cred_pass, TransportListener *transportListener)
                             :Transport(med, transport_name, bundle, rtcp_mux, transportListener) {
     cout << "Initializing DtlsTransport" << endl;
     updateTransportState(TRANSPORT_INITIAL);
@@ -44,7 +44,7 @@ DtlsTransport::DtlsTransport(MediaType med, const std::string &transport_name, b
       dtlsRtcp->setDtlsReceiver(this);
     }
     bundle_ = bundle;
-    nice_ = new NiceConnection(med, transport_name, stunServ, stunPort, comps);
+    nice_ = new NiceConnection(med, transport_name, stunServ, stunPort, cred_id, cred_pass, comps);
     nice_->setNiceListener(this);
     nice_->start();
 }
