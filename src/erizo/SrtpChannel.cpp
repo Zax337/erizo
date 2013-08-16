@@ -44,7 +44,6 @@ bool SrtpChannel::setRtcpParams(char* sendingKey, char* receivingKey) {
     return 0;
 }
 
-<<<<<<< HEAD
 int SrtpChannel::protectRtp(char* buffer, int *len) {
 
     if (!active_)
@@ -106,7 +105,6 @@ std::string SrtpChannel::generateBase64Key() {
     int ret = crypto_get_random(key, 30);
     if ( ret !=  err_status_ok) printf("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAARG %d\n", ret);
     gchar* base64key = g_base64_encode((guchar*) key, 30);
-//    return "fY9DT+uvk438xla1+q5gpb012nVbHTKLEHEQTsLd";
     return std::string(base64key);
 }
 

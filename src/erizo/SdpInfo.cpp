@@ -173,16 +173,7 @@ namespace erizo {
             printf("There is something wrong with nice description.\n");
         }
         return ret;
-
-  void SdpInfo::addCandidate(const CandidateInfo& info) {
-    candidateVector_.push_back(info);
-
-  }
-
-  void SdpInfo::addCrypto(const CryptoInfo& info) {
-    cryptoVector_.push_back(info);
-  }
-
+    }
 
 
     void SdpInfo::addDesc(std::string desc, int type ) {

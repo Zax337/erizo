@@ -170,7 +170,7 @@ namespace erizo {
     }
 
     NiceConnection::NiceConnection(MediaType med, const std::string &transport_name,  const std::string stunServ, const int stunPort, const std::string& cred_id, const std::string& cred_pass, unsigned int iceComponents):
-        mediaType(med), stunServ_(stunServ), stunPort_(stunPort), turnCredID_(cred_id), turnCredPass_(cred_pass), iceComponents_(iceComponents) {
+        mediaType(med), stunServ_(stunServ), stunPort_(stunPort), iceComponents_(iceComponents) {
             agent_ = NULL;
             loop_ = NULL;
             listener_ = NULL;
@@ -179,7 +179,7 @@ namespace erizo {
             for (unsigned int i = 1; i<=iceComponents; i++) {
                 comp_state_list[i] = NICE_INITIAL;
             }
-
+            setCredentials(cred_id, cred_pass);
         }
 
     NiceConnection::~NiceConnection() {
@@ -227,6 +227,11 @@ namespace erizo {
             printf("Data sent %d of %d\n", val, len);
        	}
         return val;
+    }
+
+    void NiceConnection::setCredentials(const std::string& id, const std::string& pass) {
+        turnCredID_.assign(id);
+        turnCredPass_.assign(pass);
     }
 
     void NiceConnection::init() {

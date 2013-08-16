@@ -12,7 +12,7 @@ namespace erizo {
 	class SrtpChannel;
 	class DtlsTransport : dtls::DtlsReceiver, public Transport {
 		public:
-			DtlsTransport(MediaType med, const std::string &transport_name, bool bundle, bool rtcp_mux, const std::string& stunServ, const int stunPort,const std::string& cred_id, const std::string& cred_pass, TransportListener *transportListener);
+			DtlsTransport(MediaType med, const std::string &transport_name, bool bundle, bool rtcp_mux, const std::string& stunServ, const int stunPort, const std::string& cred_id, const std::string& cred_pass, TransportListener *transportListener);
 			~DtlsTransport();
 			void connectionStateChanged(IceState newState);
 			std::string getMyFingerprint();

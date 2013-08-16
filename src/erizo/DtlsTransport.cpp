@@ -149,8 +149,7 @@ void DtlsTransport::write(char* data, int len) {
             return;
           }
         }
-      }
-      else{
+      } else {
         comp = 1;
 
         if (srtp && nice_->iceState == NICE_READY) {
@@ -159,6 +158,7 @@ void DtlsTransport::write(char* data, int len) {
           }
         }
       }
+
       if (length <= 10) {
         return;
       }

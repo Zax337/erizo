@@ -144,6 +144,9 @@ typedef struct {
     uint32_t ssrc;
     uint32_t extensionpayload:16;
     uint32_t extensionlength:16;
+    void print() {
+        printf("RTPheader :  cc %u, extension %u, padding %u, version %u, payloadtype %u, marker %u, seqnum %u, timestamp %u, ssrc %u, extensionpayload %u, extensionlength %u\n", cc, extension, padding, version, payloadtype, marker, seqnum, timestamp, ssrc, extensionpayload, extensionlength);
+    }
 } rtpheader;
 
 //  0                   1                   2                   3
@@ -219,6 +222,9 @@ struct redheader {
     }
     uint32_t getLength() {
         return (ntohl(tsLength) & 0x3ff);
+    }
+    void print() {
+        printf("REDheader : payloadtype %u, follow %u\n", payloadtype, follow);
     }
 };
 

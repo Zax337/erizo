@@ -22,9 +22,9 @@ namespace erizo {
         bundle_ = false;
         srand(time(NULL));
         int r = rand();
-        this->setVideoSinkSSRC(r);
+        setVideoSinkSSRC(r);
         srand(r);
-        this->setAudioSinkSSRC(rand());
+        setAudioSinkSSRC(rand());
         videoSink_ = NULL;
         audioSink_ = NULL;
         fbSink_ = NULL;
@@ -47,8 +47,7 @@ namespace erizo {
     }
 
     WebRtcConnection::~WebRtcConnection() {
-
-        this->close();
+        close();
         free(deliverMediaBuffer_);
     }
 
@@ -70,11 +69,11 @@ namespace erizo {
     }
 
     void WebRtcConnection::closeSink(){
-        this->close();
+        close();
     }
 
     void WebRtcConnection::closeSource(){
-        this->close();
+        close();
     }
 
     bool WebRtcConnection::setRemoteSdp(const std::string &sdp, const std::string& stunServ, const int stunPort, const std::string& cred_id, const std::string& cred_pass) {
@@ -153,33 +152,6 @@ namespace erizo {
         return localSdp_.getSdp();
   }
 
-  void WebRtcConnection::openFFMpegContext(std::string& ip, int port) {
-      /*
-      ecodec = avcodec_find_encoder(AV_CODEC_ID_VP8);
-      ecodec_ctx = avcodec_alloc_context3(ecodec);
-      ecodec_ctx->pix_fmt = PIX_FMT_YUV420P;
-      ecodec_ctx->width  = 320;
-      ecodec_ctx->height = 240;
-      ecodec_ctx->qmin = 3;
-      ecodec_ctx->time_base = (AVRational){1,30};
-      avcodec_open2(ecodec_ctx, ecodec, NULL);
-
-      srand(time(NULL));
-      avformat_alloc_output_context2(&oc_, NULL, "rtp", NULL);
-      av_opt_set_int(oc_->priv_data, "payload_type", 100, 0);
-      printf("ssrc %d \n", localVideoSsrc_);
-      av_opt_set_int(oc_->priv_data, "ssrc", localVideoSsrc_, 0);
-      AVStream * vstream = avformat_new_stream(oc_, ecodec_ctx->codec);
-      vstream->codec = ecodec_ctx;
-      std::stringstream url;
-      url << "rtp://" << ip << ":" << port;
-      int ret = avio_open(&oc_->pb, url.str().c_str(), AVIO_FLAG_WRITE);
-      printf("ret %d %s\n", ret, url.str().c_str());
-      assert(ret== 0);
-      avformat_write_header(oc_, NULL);*/
-  }
-
-
     int WebRtcConnection::deliverAudioData(char* buf, int len) {
         boost::mutex::scoped_lock lock(receiveAudioMutex_);
         writeSsrc(buf, len, this->getAudioSinkSSRC());
@@ -189,10 +161,10 @@ namespace erizo {
         }
         if (bundle_){
             if (videoTransport_ != NULL) {
-                videoTransport_->write(buf, len);
+//                videoTransport_->write(buf, len);
             }
         } else if (audioTransport_ != NULL) {
-            audioTransport_->write(buf, len);
+//            audioTransport_->write(buf, len);
         }
         return len;
     }
@@ -232,6 +204,7 @@ namespace erizo {
             }
         }
         writeSsrc(buf, len, this->getVideoSinkSSRC());
+printf("Send Ssrc %u\n", ntohl(head->ssrc));
         if (videoTransport_ != NULL) {
             videoTransport_->write(buf, len);
         }
@@ -311,7 +284,7 @@ namespace erizo {
                 if (audioSink_ != NULL) {
                     // Firefox does not send SSRC in SDP
                     if (this->getAudioSourceSSRC() == 0) {
-                        printf("Audio Source SSRC is %d\n", ntohl(head->ssrc));
+                        printf("Audio Source SSRC is %u\n", ntohl(head->ssrc));
                         this->setAudioSourceSSRC(ntohl(head->ssrc));
                         this->updateState(TRANSPORT_READY, transport);
                     }
@@ -322,7 +295,7 @@ namespace erizo {
                 if (videoSink_ != NULL) {
                     // Firefox does not send SSRC in SDP
                     if (this->getVideoSourceSSRC() == 0) {
-                        printf("Video Source SSRC is %d\n", ntohl(head->ssrc));
+                        printf("Video Source SSRC is %u\n", ntohl(head->ssrc));
                         this->setVideoSourceSSRC(ntohl(head->ssrc));
                         this->updateState(TRANSPORT_READY, transport);
                     }

@@ -9,10 +9,21 @@
 #include <string>
 #include <arpa/inet.h>
 
+#define BISTRI_REC 1
+#ifndef INT64_C
+#define INT64_C(c) (c ## LL)
+#define UINT64_C(c) (c ## ULL)
+#endif
+extern "C" {
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+}
+
+
 
 #define VP8_PL 0x64 
 #define RED_PL 116
-#define MAX_RTP_LEN 1000
+#define MAX_RTP_LEN 1200
 #define HEADER_SIZE 15
 
 #include "MediaDefinitions.h"
@@ -38,6 +49,9 @@ typedef struct {
     uint8_t n:1;
     uint8_t s:1;
     uint8_t partID:4;
+    void print() {
+        printf("VP8header x %u, r %u, n %u, s %u, partID %u\n", x, r, n, s, partID);
+    }
 } vp8desc;
 
 typedef struct {
@@ -46,11 +60,17 @@ typedef struct {
     uint8_t t:1;
     uint8_t k:1;
     uint8_t rsv:4;
+    void print() {
+        printf("VP8header_x i %u, l %u, t %u, k %u, rsv %u\n", i, l, t, k, rsv);
+    }
 } vp8desc_x;
 
 typedef struct {
     uint8_t pl:7;
     uint8_t p:1;
+    void print() {
+        printf("REDheader pl %u, p %u\n", pl, p);
+    }
 } redhdr;
 
 /**
@@ -93,12 +113,12 @@ public:
      */
     void closeAll();
 
+/*
   void FillRTPHeader(uint8_t * buf, bool marker); 
   void FillREDHeader(uint8_t * buf);
   void FillVP8Header(uint8_t * buf, bool, bool);
-  void FillPayload(uint8_t * buf, uint8_t * data, int size);
+  void FillPayload(uint8_t * buf, uint8_t * data, int size);*/
   void SendVideoToSubscribers(uint8_t * data, int size);
-//  void SendVideoToSubscribers(AVPacket * packet);
 
 
 private:
@@ -111,6 +131,17 @@ private:
     uint16_t seqnb_;
     uint32_t timestamp_;
     unsigned int frame_count_;
+
+    AVCodecContext * codec_ctx;
+    AVCodec * codec;
+    AVFrame * frame;
+    AVCodecContext * ecodec_ctx;
+    AVCodec * ecodec;
+#if BISTRI_REC
+    AVFormatContext * oc_;
+    int stream_index;
+#endif
+
 };
 
 } /* namespace erizo */
