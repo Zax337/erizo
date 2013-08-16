@@ -169,8 +169,8 @@ namespace erizo {
                 stream_id, component_id, lfoundation, rfoundation);
     }
 
-    NiceConnection::NiceConnection(MediaType med, const std::string &transport_name,  const std::string stunServ, const int stunPort, unsigned int iceComponents):
-        mediaType(med), stunServ_(stunServ), stunPort_(stunPort), iceComponents_(iceComponents) {
+    NiceConnection::NiceConnection(MediaType med, const std::string &transport_name,  const std::string stunServ, const int stunPort, const std::string& cred_id, const std::string& cred_pass, unsigned int iceComponents):
+        mediaType(med), stunServ_(stunServ), stunPort_(stunPort), turnCredID_(cred_id), turnCredPass_(cred_pass), iceComponents_(iceComponents) {
             agent_ = NULL;
             loop_ = NULL;
             listener_ = NULL;
@@ -274,8 +274,8 @@ namespace erizo {
         // Set Port Range ----> If this doesn't work when linking the file libnice.sym has to be modified to include this call
         //	nice_agent_set_port_range(agent_, (guint)1, (guint)1, (guint)51000, (guint)52000);
 
-        if ( ! stunServ_.empty() && stunPort_ != 0 ) {
-            nice_agent_set_relay_info(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP, stunServ_.c_str(), stunPort_, "homeo", "homeo", NICE_RELAY_TYPE_TURN_UDP);
+        if ( ! stunServ_.empty() && stunPort_ != 0 && !turnCredID_.empty()) {
+            nice_agent_set_relay_info(agent_, stream_id_, NICE_COMPONENT_TYPE_RTP, stunServ_.c_str(), stunPort_, turnCredID_.c_str(), turnCredPass_.c_str(), NICE_RELAY_TYPE_TURN_UDP);
         }
 
         nice_agent_set_stream_name(agent_, stream_id_, mediaType == AUDIO_TYPE ? "audio" : "video");

@@ -77,7 +77,7 @@ namespace erizo {
         this->close();
     }
 
-    bool WebRtcConnection::setRemoteSdp(const std::string &sdp, const std::string& stunServ, const int stunPort) {
+    bool WebRtcConnection::setRemoteSdp(const std::string &sdp, const std::string& stunServ, const int stunPort, const std::string& cred_id, const std::string& cred_pass) {
         printf("Set Remote SDP\n %s", sdp.c_str());
         remoteSdp_.initWithSdp(sdp);
 
@@ -110,10 +110,10 @@ namespace erizo {
             if (remoteSdp_.isFingerprint) {
                 // DTLS-SRTP
                 if (remoteSdp_.hasVideo) {
-                    videoTransport_ = new DtlsTransport(VIDEO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, this);
+                    videoTransport_ = new DtlsTransport(VIDEO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, cred_id, cred_pass, this);
                 }
                 if (remoteSdp_.hasAudio) {
-                    audioTransport_ = new DtlsTransport(AUDIO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, this);
+                    audioTransport_ = new DtlsTransport(AUDIO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, cred_id, cred_pass, this);
                 }
             } else {
                 // SDES
@@ -122,10 +122,10 @@ namespace erizo {
                     CryptoInfo cryptemp = crypto_remote[it];
                     if (cryptemp.mediaType == VIDEO_TYPE
                             && !cryptemp.cipherSuite.compare("AES_CM_128_HMAC_SHA1_80")) {
-                        videoTransport_ = new SdesTransport(VIDEO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, &cryptemp, this);
+                        videoTransport_ = new SdesTransport(VIDEO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, cred_id, cred_pass, &cryptemp, this);
                     } else if (!bundle_ && cryptemp.mediaType == AUDIO_TYPE
                             && !cryptemp.cipherSuite.compare("AES_CM_128_HMAC_SHA1_80")) {
-                        audioTransport_ = new SdesTransport(AUDIO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, &cryptemp, this);
+                        audioTransport_ = new SdesTransport(AUDIO_TYPE, "", bundle_, remoteSdp_.isRtcpMux, stunServ, stunPort, cred_id, cred_pass, &cryptemp, this);
                     }
                 }
             }
